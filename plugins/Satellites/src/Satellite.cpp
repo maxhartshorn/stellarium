@@ -629,7 +629,30 @@ float Satellite::getVMagnitude(const StelCore* core) const
 	{
 		sunReflAngle = -1.;
 		// OK, artificial satellite has value for standard magnitude
-		if (stdMag<99.)
+		if (pSatWrapper && name.startsWith("STARLINK"))
+		{
+			// Calculation of approx. visual magnitude for starlink satellites
+			// described here: https://arxiv.org/pdf/2003.01992.pdf (pg. 7)
+			// I'm eliminating the atmospheric absorption term since Stellarium already takes into account airmass extinction
+			double fracil = calculateIlluminatedFraction();
+			if (fracil == 0)
+				fracil = 0.000001;
+
+			// satellite radius (est 1m) expressed in AU
+			float satRad = .001f * AU_KMf;
+
+			// distance from observer to satellite expressed in AU
+			float satDist = range * AU_KMf;
+
+			// Satellite albedo estimate
+			float satAlbedo = .25f;
+
+			// Magnitude of the Sun (in the V band, around 500nm)
+			float magSun = -26.75f;
+
+			vmag = magSun - 2.5 * std::log10(fracil * satRad * satRad * satAlbedo) + 5 * std::log10(satDist);
+		} 
+		else if (stdMag<99.)
 		{
 			// Calculation of approx. visual magnitude for artificial satellites
 			// described here: http://www.prismnet.com/~mmccants/tles/mccdesc.html
